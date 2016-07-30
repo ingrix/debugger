@@ -28,17 +28,25 @@ int main()
   }
   else
   {
-    struct user_regs_struct regs;
-    int n_read = 0;
     printf("Forked pid %d\n",h.p);
-    if(ptrace(PTRACE_GETREGS, h.p, NULL, &regs) == -1)
+    while(1)
     {
-      printf("ptrace failed: %s\n", strerror(errno));
+      struct user_regs_struct regs;
+
+      if(ptrace(PTRACE_GETREGS, h.p, NULL, &regs) == -1)
+      {
+        printf("ptrace failed: %s\n", strerror(errno));
+      }
+
+      printf("%%rsp: %p, %%rsp: %p\n",regs.rip,regs.rsp);
+      printf("  syscall: %d\n",regs.orig_rax);
+      ptrace(PTRACE_SYSCALL,h.p,NULL,NULL);
+      waitpid(h.p,&status,0);
+      if(WIFEXITED(status))
+      {
+        break;
+      }
     }
-    printf("%%rsp: %p, %%rsp: %p\n",regs.rip,regs.rsp);
-    printf("syscall: %d\n",regs.rdi);
-    ptrace(PTRACE_CONT,h.p,NULL,NULL);
-    waitpid(h.p,&status,0);
   }
   return 0;
 }
